@@ -558,7 +558,8 @@ public final class Affirm {
         AffirmUtils.requireNonNull(configuration, "configuration cannot be null");
 
         if (isInitialized()) {
-            AffirmLog.w("Affirm is already initialized");
+            AffirmLog.d("Affirm is already initialized, updating configuration");
+            AffirmPlugins.get().setConfiguration(configuration);
             return;
         }
         AffirmPlugins.initialize(configuration);
