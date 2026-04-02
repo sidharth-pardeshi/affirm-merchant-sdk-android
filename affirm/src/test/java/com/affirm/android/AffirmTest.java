@@ -54,6 +54,46 @@ public class AffirmTest {
     }
 
     @Test
+    public void testReInitializeUpdatesConfiguration() {
+        // Re-initialize with CA configuration
+        Affirm.initialize(new Affirm.Configuration.Builder("CA_KEY", Affirm.Environment.SANDBOX)
+                .setLocale("en_CA")
+                .setCountryCode("CAN")
+                .build()
+        );
+        assertEquals("en_CA", AffirmPlugins.get().locale());
+        assertEquals("CAN", AffirmPlugins.get().countryCode());
+        assertEquals("CA_KEY", AffirmPlugins.get().publicKey());
+
+        // Re-initialize with UK configuration (should update, not be silently ignored)
+        Affirm.initialize(new Affirm.Configuration.Builder("UK_KEY", Affirm.Environment.SANDBOX)
+                .setLocale("en_GB")
+                .setCountryCode("GBR")
+                .build()
+        );
+        assertEquals("en_GB", AffirmPlugins.get().locale());
+        assertEquals("GBR", AffirmPlugins.get().countryCode());
+        assertEquals("UK_KEY", AffirmPlugins.get().publicKey());
+    }
+
+    @Test
+    public void testRegionSwitchCAtoUK() {
+        // Initialize with CA
+        Affirm.initialize(new Affirm.Configuration.Builder("CA_KEY", Affirm.Environment.SANDBOX)
+                .setLocale("en_CA")
+                .setCountryCode("CAN")
+                .build()
+        );
+
+        // Switch to UK using setters
+        Affirm.setLocale("en_GB");
+        Affirm.setCountryCode("GBR");
+
+        assertEquals("en_GB", AffirmPlugins.get().locale());
+        assertEquals("GBR", AffirmPlugins.get().countryCode());
+    }
+
+    @Test
     public void onActivityResult_Success() {
         Affirm.CheckoutCallbacks callbacks = Mockito.mock(Affirm.CheckoutCallbacks.class);
 
