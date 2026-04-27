@@ -134,10 +134,11 @@ public final class AffirmUtils {
             @NonNull AffirmColor affirmColor,
             @NonNull Resources resources
     ) {
-        SpannableString spannable = new SpannableString(template);
         if (logoDrawable == null) {
-            return spannable;
+            String text = LOGO_PATTERN.matcher(template).replaceAll("Affirm");
+            return new SpannableString(text);
         }
+        SpannableString spannable = new SpannableString(template);
         Matcher matcher = LOGO_PATTERN.matcher(template);
         while (matcher.find()) {
             int start = matcher.start();

@@ -133,5 +133,10 @@ public class AffirmUtilsTest {
 
         ImageSpan[] spans = result.getSpans(0, result.length(), ImageSpan.class);
         Truth.assertThat(spans).hasLength(0);
+
+        // The placeholder should be replaced with text "Affirm", not left as raw {affirm_logo}
+        String resultText = result.toString();
+        Truth.assertThat(resultText).doesNotContain("{affirm_logo}");
+        Truth.assertThat(resultText).contains("Pay over time with Affirm.");
     }
 }
