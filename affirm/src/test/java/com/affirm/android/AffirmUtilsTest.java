@@ -1,21 +1,45 @@
 package com.affirm.android;
 
+import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.text.SpannableString;
 import android.text.style.ImageSpan;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.truth.Truth;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
-import org.robolectric.RuntimeEnvironment;
-
 import java.math.BigDecimal;
 import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 @RunWith(RobolectricTestRunner.class)
 public class AffirmUtilsTest {
+
+    private Context mockContext;
+
+    @Before
+    public void setUp() {
+        // Create a mock Context and Resources so that drawable loading returns
+        // a fake Drawable instead of trying to inflate vector XML resources,
+        // which Robolectric cannot always resolve.
+        mockContext = mock(Context.class);
+        Resources mockResources = mock(Resources.class);
+        Drawable mockDrawable = mock(Drawable.class);
+
+        when(mockContext.getResources()).thenReturn(mockResources);
+        when(mockResources.getDrawable(anyInt())).thenReturn(mockDrawable);
+        when(mockDrawable.mutate()).thenReturn(mockDrawable);
+        when(mockDrawable.getIntrinsicWidth()).thenReturn(100);
+        when(mockDrawable.getIntrinsicHeight()).thenReturn(40);
+    }
 
     @Test
     public void convertToAffirmAmounts() {
@@ -43,7 +67,7 @@ public class AffirmUtilsTest {
                 14f,
                 AffirmLogoType.AFFIRM_DISPLAY_TYPE_LOGO,
                 AffirmColor.AFFIRM_COLOR_TYPE_BLUE,
-                RuntimeEnvironment.getApplication()
+                mockContext
         );
 
         // Only 1 ImageSpan should be present (for the placeholder), not 2
@@ -65,7 +89,7 @@ public class AffirmUtilsTest {
                 14f,
                 AffirmLogoType.AFFIRM_DISPLAY_TYPE_LOGO,
                 AffirmColor.AFFIRM_COLOR_TYPE_BLUE,
-                RuntimeEnvironment.getApplication()
+                mockContext
         );
 
         // No ImageSpan should be present since there is no {affirm_logo} placeholder
@@ -86,7 +110,7 @@ public class AffirmUtilsTest {
                 14f,
                 AffirmLogoType.AFFIRM_DISPLAY_TYPE_LOGO,
                 AffirmColor.AFFIRM_COLOR_TYPE_BLUE,
-                RuntimeEnvironment.getApplication()
+                mockContext
         );
 
         // Both placeholders should get replaced with logo ImageSpans
@@ -104,7 +128,7 @@ public class AffirmUtilsTest {
                 14f,
                 AffirmLogoType.AFFIRM_DISPLAY_TYPE_TEXT,
                 AffirmColor.AFFIRM_COLOR_TYPE_BLUE,
-                RuntimeEnvironment.getApplication()
+                mockContext
         );
 
         ImageSpan[] spans = result.getSpans(0, result.length(), ImageSpan.class);
