@@ -35,7 +35,7 @@ import static com.affirm.android.AffirmLogoType.AFFIRM_DISPLAY_TYPE_TEXT;
 public final class AffirmUtils {
 
     private static final Pattern LOGO_PATTERN =
-            Pattern.compile("\\baffirm\\b", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("\\{affirm_logo\\}");
 
     private AffirmUtils() {
     }
