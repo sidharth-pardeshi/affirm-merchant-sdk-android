@@ -28,6 +28,7 @@ import androidx.annotation.Nullable;
 
 import static com.affirm.android.AffirmColor.AFFIRM_COLOR_TYPE_BLUE;
 import static com.affirm.android.AffirmColor.AFFIRM_COLOR_TYPE_BLUE_BLACK;
+import static com.affirm.android.AffirmConstants.LOGO_PLACEHOLDER;
 import static com.affirm.android.AffirmConstants.PLACEHOLDER_END;
 import static com.affirm.android.AffirmConstants.PLACEHOLDER_START;
 import static com.affirm.android.AffirmLogoType.AFFIRM_DISPLAY_TYPE_TEXT;
@@ -35,7 +36,7 @@ import static com.affirm.android.AffirmLogoType.AFFIRM_DISPLAY_TYPE_TEXT;
 public final class AffirmUtils {
 
     private static final Pattern LOGO_PATTERN =
-            Pattern.compile("\\{affirm_logo\\}");
+            Pattern.compile(Pattern.quote(LOGO_PLACEHOLDER));
 
     private AffirmUtils() {
     }
