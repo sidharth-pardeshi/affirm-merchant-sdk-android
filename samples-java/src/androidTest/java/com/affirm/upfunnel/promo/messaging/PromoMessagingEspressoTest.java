@@ -12,9 +12,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -70,6 +73,14 @@ public class PromoMessagingEspressoTest {
     public ActivityTestRule<MainActivity> activityRule =
             new ActivityTestRule<>(MainActivity.class, true, false);
 
+    @Rule
+    public TestWatcher screenshotRule = new TestWatcher() {
+        @Override
+        protected void failed(Throwable e, Description description) {
+            captureScreenshot(description.getMethodName() + "-failure");
+        }
+    };
+
     private MockWebServer mockWebServer;
 
     @Before
@@ -110,6 +121,8 @@ public class PromoMessagingEspressoTest {
                 .withElement(findElement(Locator.CLASS_NAME, "affirm-ala-price"))
                 .check(webMatches(getText(), equalTo("$60"))));
 
+        captureScreenshot("native-html-ala-rendered");
+
         for (int i = 0; i < PROMO_REQUEST_COUNT; i++) {
             assertExpectedPromoRequest(takePromoRequest());
         }
@@ -123,6 +136,7 @@ public class PromoMessagingEspressoTest {
                 .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.GONE))));
         eventually(() -> onView(withId(R.id.promotionTextView))
                 .check(matches(withText(""))));
+        captureScreenshot("empty-promo-hidden");
     }
 
     @Test
@@ -135,6 +149,7 @@ public class PromoMessagingEspressoTest {
         eventually(() -> assertThat(getResumedActivity(), instanceOf(PrequalActivity.class)));
         UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         assertNotNull(device.wait(Until.findObject(By.clazz(WebView.class)), WAIT_TIMEOUT_MS));
+        captureScreenshot("adaptive-promo-prequal-presented");
     }
 
     @Test
@@ -145,6 +160,7 @@ public class PromoMessagingEspressoTest {
         onView(withId(R.id.promo)).perform(click());
 
         eventually(() -> assertThat(getResumedActivity(), instanceOf(ModalActivity.class)));
+        captureScreenshot("fast-promo-modal-presented");
     }
 
     private void launchWithPromoFixture(String fixtureName) throws IOException {
@@ -190,7 +206,7 @@ public class PromoMessagingEspressoTest {
         InputStream inputStream = InstrumentationRegistry.getInstrumentation()
                 .getContext()
                 .getAssets()
-                .open("promos/" + fixtureName);
+                .open("promos/upfunnel/" + fixtureName);
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             StringBuilder builder = new StringBuilder();
@@ -246,6 +262,21 @@ public class PromoMessagingEspressoTest {
             throw (AssertionError) lastFailure;
         }
         throw new AssertionError(lastFailure);
+    }
+
+    private void captureScreenshot(String name) {
+        File screenshotDir = InstrumentationRegistry
+                .getInstrumentation()
+                .getTargetContext()
+                .getExternalFilesDir("upfunnel-promo-screenshots");
+        if (screenshotDir == null) {
+            return;
+        }
+        if (!screenshotDir.exists() && !screenshotDir.mkdirs()) {
+            return;
+        }
+        UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        device.takeScreenshot(new File(screenshotDir, name + ".png"));
     }
 
     private interface ThrowingRunnable {

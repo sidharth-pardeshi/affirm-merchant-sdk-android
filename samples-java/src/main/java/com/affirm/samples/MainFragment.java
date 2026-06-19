@@ -1,6 +1,7 @@
 package com.affirm.samples;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -57,6 +58,8 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
 
     private static final BigDecimal PRICE = BigDecimal.valueOf(1100.0);
     private static final String PROMO_EXTERNAL_ID = "promo-messaging-test";
+    private static final String UPFUNNEL_PROMO_TEST_PREFERENCES = "upfunnel_promo_test";
+    private static final String PROMO_EXTERNAL_ID_PREFERENCE = "promo_external_id";
     private AffirmRequest promoRequest;
     private AffirmRequest htmlPromoRequest;
 
@@ -165,7 +168,9 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
                 .build()
         );
 
-        Affirm.configureWithAmount(affirmPromotionButton1, PROMO_EXTERNAL_ID,
+        final String promoExternalId = promoExternalId();
+
+        Affirm.configureWithAmount(affirmPromotionButton1, promoExternalId,
                 PromoPageType.PRODUCT, PRICE, true, items);
 
         // Option2 - Initialize by new
@@ -176,7 +181,7 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
         affirmPromotionButton2.configWithHtmlStyling("file:///android_asset/remote_promo.css", typefaceDeclaration);
 
         ((FrameLayout) view.findViewById(R.id.promo_container)).addView(affirmPromotionButton2);
-        Affirm.configureWithAmount(affirmPromotionButton2, PROMO_EXTERNAL_ID,
+        Affirm.configureWithAmount(affirmPromotionButton2, promoExternalId,
                 PromoPageType.PRODUCT, PRICE, true, items);
 
         // Fetch promotion, then use your own TextView to display
@@ -184,7 +189,7 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
 
 
         Affirm.PromoRequestData requestData = new Affirm.PromoRequestData.Builder(PRICE, true)
-                .setPromoId(PROMO_EXTERNAL_ID)
+                .setPromoId(promoExternalId)
                 .setPageType(PromoPageType.PRODUCT)
                 .setItems(items)
                 .build();
@@ -217,6 +222,19 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
                 Toast.makeText(getContext(), "Failed to get html promo message, reason: " + exception.toString(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private String promoExternalId() {
+        Context context = getContext();
+        if (context != null) {
+            String override = context
+                    .getSharedPreferences(UPFUNNEL_PROMO_TEST_PREFERENCES, Context.MODE_PRIVATE)
+                    .getString(PROMO_EXTERNAL_ID_PREFERENCE, null);
+            if (override != null && !override.trim().isEmpty()) {
+                return override;
+            }
+        }
+        return PROMO_EXTERNAL_ID;
     }
 
     @Override
