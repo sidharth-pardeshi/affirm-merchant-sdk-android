@@ -16,7 +16,6 @@ import com.affirm.android.exception.ConnectionException;
 import java.math.BigDecimal;
 
 import static com.affirm.android.AffirmConstants.AMOUNT;
-import static com.affirm.android.AffirmConstants.HTTPS_PROTOCOL;
 import static com.affirm.android.AffirmConstants.PAGE_TYPE;
 import static com.affirm.android.AffirmConstants.PREQUAL_LOCALE;
 import static com.affirm.android.AffirmConstants.PREQUAL_PAGE_TYPE;
@@ -101,7 +100,7 @@ public final class PrequalFragment extends AffirmFragment
     @Override
     void onAttached() {
         String publicKey = AffirmPlugins.get().publicKey();
-        String prequalUri = HTTPS_PROTOCOL + AffirmPlugins.get().promoUrl() + PREQUAL_PATH;
+        String prequalUri = AffirmPlugins.get().promoBaseUrl() + PREQUAL_PATH;
         Uri.Builder builder = Uri.parse(prequalUri).buildUpon();
         builder.appendQueryParameter(PREQUAL_PUBLIC_API_KEY, publicKey);
         builder.appendQueryParameter(PREQUAL_UNIT_PRICE, amount);

@@ -1,0 +1,12 @@
+{
+  "promo": {
+    "ala": "",
+    "html_ala": "",
+    "config": {
+      "promo_prequal_enabled": false,
+      "promo_style": "adaptive",
+      "loan_type": "installment",
+      "toast_enabled": false
+    }
+  }
+}

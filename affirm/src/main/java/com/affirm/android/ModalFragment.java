@@ -150,7 +150,7 @@ public final class ModalFragment extends AffirmFragment implements ModalWebViewC
     void onAttached() {
         final String html = initialHtml();
         webView.loadDataWithBaseURL(
-                HTTPS_PROTOCOL + AffirmPlugins.get().promoUrl(),
+                AffirmPlugins.get().promoBaseUrl(),
                 html, TEXT_HTML, UTF_8, null);
     }
 

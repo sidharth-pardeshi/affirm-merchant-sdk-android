@@ -56,6 +56,7 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
         Affirm.VcnCheckoutCallbacks, Affirm.PrequalCallbacks {
 
     private static final BigDecimal PRICE = BigDecimal.valueOf(1100.0);
+    private static final String PROMO_EXTERNAL_ID = "promo-messaging-test";
     private AffirmRequest promoRequest;
     private AffirmRequest htmlPromoRequest;
 
@@ -164,7 +165,8 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
                 .build()
         );
 
-        Affirm.configureWithAmount(affirmPromotionButton1, PromoPageType.PRODUCT, PRICE, true, items);
+        Affirm.configureWithAmount(affirmPromotionButton1, PROMO_EXTERNAL_ID,
+                PromoPageType.PRODUCT, PRICE, true, items);
 
         // Option2 - Initialize by new
         AffirmPromotionButton affirmPromotionButton2 = new AffirmPromotionButton(getContext());
@@ -174,14 +176,16 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
         affirmPromotionButton2.configWithHtmlStyling("file:///android_asset/remote_promo.css", typefaceDeclaration);
 
         ((FrameLayout) view.findViewById(R.id.promo_container)).addView(affirmPromotionButton2);
-        Affirm.configureWithAmount(affirmPromotionButton2, PRICE, true, items);
+        Affirm.configureWithAmount(affirmPromotionButton2, PROMO_EXTERNAL_ID,
+                PromoPageType.PRODUCT, PRICE, true, items);
 
         // Fetch promotion, then use your own TextView to display
         TextView promotionTextView = view.findViewById(R.id.promotionTextView);
 
 
         Affirm.PromoRequestData requestData = new Affirm.PromoRequestData.Builder(PRICE, true)
-                .setPageType(null)
+                .setPromoId(PROMO_EXTERNAL_ID)
+                .setPageType(PromoPageType.PRODUCT)
                 .setItems(items)
                 .build();
 

@@ -20,7 +20,7 @@ public final class CookiesUtil {
     public static void clearCookies(Context context) {
         final CookieManager cookieManager = CookieManager.getInstance();
         final CookieSyncManager cookieSyncManager = CookieSyncManager.createInstance(context);
-        CookiesUtil.clearCookieByUrl(HTTPS_PROTOCOL + AffirmPlugins.get().promoUrl(),
+        CookiesUtil.clearCookieByUrl(AffirmPlugins.get().promoBaseUrl(),
                 cookieManager, cookieSyncManager);
         CookiesUtil.clearCookieByUrl(HTTPS_PROTOCOL + AffirmPlugins.get().checkoutUrl(),
                 cookieManager, cookieSyncManager);

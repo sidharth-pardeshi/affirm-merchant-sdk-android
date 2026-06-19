@@ -157,9 +157,7 @@ class PromoRequest implements AffirmRequest {
         public String url() {
             int centAmount = AffirmUtils.decimalDollarsToIntegerCents(dollarAmount);
             Uri uri = Uri.parse(String.format(
-                    AffirmHttpClient.getProtocol()
-                            + AffirmPlugins.get().promoUrl()
-                            + PROMO_PATH,
+                    AffirmPlugins.get().promoBaseUrl() + PROMO_PATH,
                     AffirmPlugins.get().publicKey()
             ));
             Uri.Builder builder = uri.buildUpon();

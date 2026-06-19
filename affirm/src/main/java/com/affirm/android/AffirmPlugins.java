@@ -3,6 +3,8 @@ package com.affirm.android;
 import android.webkit.CookieManager;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.affirm.android.model.AffirmAdapterFactory;
 import com.affirm.android.model.CardDetailsInner;
@@ -14,10 +16,14 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 
+import static com.affirm.android.AffirmConstants.HTTPS_PROTOCOL;
+
 public class AffirmPlugins {
 
     private static final Object LOCK = new Object();
     private static AffirmPlugins instance;
+    @Nullable
+    private static String promoBaseUrlOverride;
     private Affirm.Configuration configuration;
 
     private AffirmHttpClient restClient;
@@ -106,6 +112,40 @@ public class AffirmPlugins {
         return configuration.environment.promoUrl(countryCode());
     }
 
+    String promoBaseUrl() {
+        synchronized (LOCK) {
+            if (promoBaseUrlOverride != null) {
+                return promoBaseUrlOverride;
+            }
+        }
+        return HTTPS_PROTOCOL + promoUrl();
+    }
+
+    @VisibleForTesting
+    static void setPromoBaseUrlOverride(@Nullable String promoBaseUrlOverride) {
+        AffirmPlugins plugins;
+        synchronized (LOCK) {
+            AffirmPlugins.promoBaseUrlOverride = trimTrailingSlash(promoBaseUrlOverride);
+            plugins = instance;
+        }
+        if (plugins != null) {
+            plugins.resetRestClient();
+        }
+    }
+
+    @VisibleForTesting
+    static void clearPromoBaseUrlOverride() {
+        setPromoBaseUrlOverride(null);
+    }
+
+    @Nullable
+    private static String trimTrailingSlash(@Nullable String promoBaseUrl) {
+        if (promoBaseUrl != null && promoBaseUrl.endsWith("/")) {
+            return promoBaseUrl.substring(0, promoBaseUrl.length() - 1);
+        }
+        return promoBaseUrl;
+    }
+
     String jsUrl() {
         return configuration.environment.jsUrl();
     }
@@ -138,9 +178,7 @@ public class AffirmPlugins {
                 builder.addHeader("Affirm-User-Agent", "Affirm-Android-SDK");
                 builder.addHeader("Affirm-User-Agent-Version", BuildConfig.VERSION_NAME);
                 CookieManager cookieManager = CookieManager.getInstance();
-                String cookie = cookieManager.getCookie(
-                        AffirmConstants.HTTPS_PROTOCOL + promoUrl()
-                );
+                String cookie = cookieManager.getCookie(promoBaseUrl());
                 if (cookie != null) {
                     builder.addHeader("Cookie", cookie);
                 }
@@ -152,5 +190,9 @@ public class AffirmPlugins {
             restClient = AffirmHttpClient.createClient(clientBuilder);
         }
         return restClient;
+    }
+
+    private synchronized void resetRestClient() {
+        restClient = null;
     }
 }
