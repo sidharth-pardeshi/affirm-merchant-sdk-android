@@ -13,7 +13,6 @@ import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -49,7 +48,6 @@ import static org.hamcrest.CoreMatchers.startsWith;
 
 @RunWith(AndroidJUnit4.class)
 @LargeTest
-@Ignore("Sandbox-dependent smoke tests; deterministic promo messaging coverage lives in PromoMessagingEspressoTest.")
 public class MainActivityEspressoTest {
 
     @Rule

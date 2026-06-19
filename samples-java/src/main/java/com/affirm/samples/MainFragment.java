@@ -57,7 +57,6 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
         Affirm.VcnCheckoutCallbacks, Affirm.PrequalCallbacks {
 
     private static final BigDecimal PRICE = BigDecimal.valueOf(1100.0);
-    private static final String PROMO_EXTERNAL_ID = "promo-messaging-test";
     private static final String UPFUNNEL_PROMO_TEST_PREFERENCES = "upfunnel_promo_test";
     private static final String PROMO_EXTERNAL_ID_PREFERENCE = "promo_external_id";
     private AffirmRequest promoRequest;
@@ -170,8 +169,12 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
 
         final String promoExternalId = promoExternalId();
 
-        Affirm.configureWithAmount(affirmPromotionButton1, promoExternalId,
-                PromoPageType.PRODUCT, PRICE, true, items);
+        if (promoExternalId != null) {
+            Affirm.configureWithAmount(affirmPromotionButton1, promoExternalId,
+                    PromoPageType.PRODUCT, PRICE, true, items);
+        } else {
+            Affirm.configureWithAmount(affirmPromotionButton1, PromoPageType.PRODUCT, PRICE, true, items);
+        }
 
         // Option2 - Initialize by new
         AffirmPromotionButton affirmPromotionButton2 = new AffirmPromotionButton(getContext());
@@ -181,18 +184,26 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
         affirmPromotionButton2.configWithHtmlStyling("file:///android_asset/remote_promo.css", typefaceDeclaration);
 
         ((FrameLayout) view.findViewById(R.id.promo_container)).addView(affirmPromotionButton2);
-        Affirm.configureWithAmount(affirmPromotionButton2, promoExternalId,
-                PromoPageType.PRODUCT, PRICE, true, items);
+        if (promoExternalId != null) {
+            Affirm.configureWithAmount(affirmPromotionButton2, promoExternalId,
+                    PromoPageType.PRODUCT, PRICE, true, items);
+        } else {
+            Affirm.configureWithAmount(affirmPromotionButton2, PRICE, true, items);
+        }
 
         // Fetch promotion, then use your own TextView to display
         TextView promotionTextView = view.findViewById(R.id.promotionTextView);
 
 
-        Affirm.PromoRequestData requestData = new Affirm.PromoRequestData.Builder(PRICE, true)
-                .setPromoId(promoExternalId)
-                .setPageType(PromoPageType.PRODUCT)
-                .setItems(items)
-                .build();
+        Affirm.PromoRequestData.Builder requestDataBuilder = new Affirm.PromoRequestData.Builder(PRICE, true)
+                .setPageType(null)
+                .setItems(items);
+        if (promoExternalId != null) {
+            requestDataBuilder
+                    .setPromoId(promoExternalId)
+                    .setPageType(PromoPageType.PRODUCT);
+        }
+        Affirm.PromoRequestData requestData = requestDataBuilder.build();
 
         promoRequest = Affirm.fetchPromotion(requestData, promotionTextView.getTextSize(), getContext(), new PromotionCallbackV2() {
             @Override
@@ -234,7 +245,7 @@ public class MainFragment extends Fragment implements Affirm.CheckoutCallbacks,
                 return override;
             }
         }
-        return PROMO_EXTERNAL_ID;
+        return null;
     }
 
     @Override

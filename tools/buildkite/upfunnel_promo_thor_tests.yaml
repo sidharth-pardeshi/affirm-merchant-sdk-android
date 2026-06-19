@@ -1,0 +1,114 @@
+# Runs the Android Merchant SDK promo messaging sample app against a live US Thor.
+---
+env:
+  ALL_THE_THINGS_DIR: /tmp/all-the-things
+  ANDROID_IMAGE: |-
+    998571911837.dkr.ecr.us-east-1.amazonaws.com/affirm-android:android-slim-ci-jdk21-sdk34
+
+steps:
+  - key: thor-provision
+    trigger: thor-provision-for-frontend-tests
+    async: false
+    build:
+      branch: main
+      message: Provision Thor for Android Merchant SDK promo messaging tests on $BUILDKITE_BRANCH
+      meta_data:
+        dts: [ "superapp" ]
+        caller: affirm-merchant-sdk-android
+        mode: live
+        country_code: us
+        environment: thor
+        triggered_from_job: "${BUILDKITE_JOB_ID}"
+    label: Thor Provision
+    allow_dependency_failure: false
+
+  - key: create-thor-merchant
+    label: Create live Upfunnel merchant on Thor
+    depends_on: [ "thor-provision" ]
+    commands: |
+      THOR_ID="$(buildkite-agent meta-data get "thor-id-us-live")"
+      export BACKEND_URL="https://${THOR_ID}.affirm-thor.com"
+      rm -rf "$ALL_THE_THINGS_DIR"
+      git clone --depth 1 git@github.com:Affirm/all-the-things.git "$ALL_THE_THINGS_DIR"
+      PYTHON_BIN="${PYTHON_BIN:-python3.9}"
+      if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+        PYTHON_BIN=python3
+      fi
+      "$PYTHON_BIN" -c 'import sys; raise SystemExit("Upfunnel test framework requires Python 3.9+") if sys.version_info < (3, 9) else None'
+      "$PYTHON_BIN" -m venv .upfunnel-promo-thor-venv
+      . .upfunnel-promo-thor-venv/bin/activate
+      python -m pip install --upgrade pip uv
+      uv pip install -e "$ALL_THE_THINGS_DIR/test_framework/tests/e2e"
+      python tools/buildkite/create_upfunnel_promo_thor_merchant.py --backend-url "$BACKEND_URL"
+    agents:
+      queue: android
+    artifact_paths:
+      - upfunnel-promo-thor.env
+    plugins:
+      - docker#v3.3.0:
+          image: ${ANDROID_IMAGE}
+          workdir: "/app"
+          environment:
+            - "ALL_THE_THINGS_DIR"
+            - "BUILDKITE_BRANCH"
+            - "BUILDKITE_BUILD_NUMBER"
+            - "BUILDKITE_JOB_ID"
+          shell: [ "/bin/bash", "-e", "-c" ]
+
+  - wait
+
+  - key: android-sdk-upfunnel-promo-thor-test
+    label: Run Android SDK promo messaging test on Thor
+    depends_on: [ "create-thor-merchant" ]
+    commands: |
+      buildkite-agent artifact download upfunnel-promo-thor.env .
+      . upfunnel-promo-thor.env
+      tools/buildkite/run_upfunnel_promo_thor_test.sh
+    artifact_paths:
+      - upfunnel-promo-thor.env
+    env:
+      AWS_ASSUME_ROLE_ARN: arn:aws:iam::448435121187:role/ec2-docker-client
+      FIREBASE_PROJECT: firebase-affirm
+    agents:
+      queue: android
+    plugins:
+      - seek-oss/aws-sm#v2.0.0:
+          env:
+            FIREBASE_SERVICE_ACCOUNT:
+              secret-id: buildkite/firebase/account
+              json-key: ".FIREBASE_SERVICE_ACCOUNT"
+      - docker#v3.3.0:
+          image: ${ANDROID_IMAGE}
+          workdir: "/app"
+          environment:
+            - "AFFIRM_EXPECTED_PROMO_TEXT"
+            - "AFFIRM_PROMO_BASE_URL"
+            - "AFFIRM_PROMO_EXTERNAL_ID"
+            - "AFFIRM_PUBLIC_KEY"
+            - "BUILDKITE_BUILD_NUMBER"
+            - "BUILDKITE_JOB_ID"
+            - "FIREBASE_PROJECT=firebase-affirm"
+            - "FIREBASE_SERVICE_ACCOUNT"
+          shell: [ "/bin/bash", "-e", "-c" ]
+      - ssh://git@github.com/affirm/firebase-test-lab-annotate-buildkite-plugin#v1.0.4:
+          artifacts: "*flank.log"
+    retry:
+      manual:
+        permit_on_passed: true
+      automatic:
+        - exit_status: -1
+          limit: 2
+        - exit_status: 255
+          limit: 2
+
+  - wait
+
+  - label: Check Android SDK Thor test results
+    key: checking-tests-results
+    depends_on: [ "android-sdk-upfunnel-promo-thor-test" ]
+    allow_dependency_failure: true
+    plugins:
+      - junit-annotate#v2.4.1:
+          artifacts: "*/*.junit"
+          ruby-image: "998571911837.dkr.ecr.us-east-1.amazonaws.com/dockerhub/library/ruby:2.5-alpine"
+          fail-build-on-error: true
