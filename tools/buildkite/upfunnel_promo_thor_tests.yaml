@@ -29,6 +29,10 @@ steps:
       THOR_ID="$(buildkite-agent meta-data get "thor-id-us-live")"
       export BACKEND_URL="https://$${THOR_ID}.affirm-thor.com"
       rm -rf "$ALL_THE_THINGS_DIR"
+      mkdir -p "$$HOME/.ssh"
+      ssh-keyscan github.com >> "$$HOME/.ssh/known_hosts"
+      chmod 700 "$$HOME/.ssh"
+      chmod 600 "$$HOME/.ssh/known_hosts"
       git clone --depth 1 git@github.com:Affirm/all-the-things.git "$ALL_THE_THINGS_DIR"
       PYTHON_BIN="$${PYTHON_BIN:-python3.9}"
       if ! command -v "$$PYTHON_BIN" >/dev/null 2>&1; then
