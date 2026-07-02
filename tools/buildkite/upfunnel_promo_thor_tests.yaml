@@ -29,11 +29,17 @@ steps:
       THOR_ID="$(buildkite-agent meta-data get "thor-id-us-live")"
       export BACKEND_URL="https://$${THOR_ID}.affirm-thor.com"
       rm -rf "$ALL_THE_THINGS_DIR"
-      mkdir -p "$$HOME/.ssh"
-      ssh-keyscan github.com >> "$$HOME/.ssh/known_hosts"
-      chmod 700 "$$HOME/.ssh"
-      chmod 600 "$$HOME/.ssh/known_hosts"
-      git clone --depth 1 git@github.com:Affirm/all-the-things.git "$ALL_THE_THINGS_DIR"
+      ASKPASS_SCRIPT="$(mktemp)"
+      trap 'rm -f "$$ASKPASS_SCRIPT"' EXIT
+      cat > "$$ASKPASS_SCRIPT" <<'EOF'
+      #!/bin/sh
+      case "$$1" in
+        *Username*) echo "x-access-token" ;;
+        *Password*) echo "$$GITHUB_API_KEY" ;;
+      esac
+      EOF
+      chmod 700 "$$ASKPASS_SCRIPT"
+      GIT_ASKPASS="$$ASKPASS_SCRIPT" GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/Affirm/all-the-things.git "$ALL_THE_THINGS_DIR"
       PYTHON_BIN="$${PYTHON_BIN:-python3.9}"
       if ! command -v "$$PYTHON_BIN" >/dev/null 2>&1; then
         PYTHON_BIN=python3
@@ -50,6 +56,11 @@ steps:
     artifact_paths:
       - upfunnel-promo-thor.env
     plugins:
+      - ssh://git@github.com/affirm/aws-sm-buildkite-plugin.git#v2.3.1:
+          env:
+            GITHUB_API_KEY:
+              json-key: .GITHUB_API_KEY
+              secret-id: buildkite/github/api-key
       - docker#v3.3.0:
           image: ${ANDROID_IMAGE}
           workdir: "/app"
@@ -58,6 +69,7 @@ steps:
             - "BUILDKITE_BRANCH"
             - "BUILDKITE_BUILD_NUMBER"
             - "BUILDKITE_JOB_ID"
+            - "GITHUB_API_KEY"
           shell: [ "/bin/bash", "-e", "-c" ]
 
   - wait
