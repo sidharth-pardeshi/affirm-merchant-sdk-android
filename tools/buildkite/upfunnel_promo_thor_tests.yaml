@@ -44,7 +44,7 @@ steps:
       if ! command -v "$$PYTHON_BIN" >/dev/null 2>&1; then
         PYTHON_BIN=python3
       fi
-      "$$PYTHON_BIN" -c 'import sys; raise SystemExit("Upfunnel test framework requires Python 3.9+") if sys.version_info < (3, 9) else None'
+      "$$PYTHON_BIN" -c 'import sys; sys.exit("Upfunnel test framework requires Python 3.9+") if sys.version_info < (3, 9) else None'
       "$$PYTHON_BIN" -m venv .upfunnel-promo-thor-venv
       . .upfunnel-promo-thor-venv/bin/activate
       python -m pip install --upgrade pip uv
