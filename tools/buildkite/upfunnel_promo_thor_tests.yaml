@@ -13,7 +13,7 @@ steps:
       branch: main
       message: Provision Thor for Android Merchant SDK promo messaging tests on $BUILDKITE_BRANCH
       meta_data:
-        dts: [ "superapp", "upfunnel" ]
+        dts: [ "superapp", "upfunnel", "tulip" ]
         caller: affirm-merchant-sdk-android
         mode: live
         country_code: us
