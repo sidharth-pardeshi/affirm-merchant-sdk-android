@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 
 METADATA_PUBLIC_KEY = "upfunnel-sdk-promo-messaging-public-key"
@@ -43,11 +44,53 @@ def write_env_file(path: Path, values: dict[str, str]) -> None:
     path.write_text("\n".join(lines) + "\n")
 
 
+async def wait_for_live_upfunnel_promo(
+    session_io: Any,
+    public_key: str,
+    params: dict[str, str],
+    path: str,
+    max_attempts: int = 60,
+    delay_seconds: int = 2,
+) -> dict[str, Any]:
+    last_status = "(no response)"
+    last_body = "(no body)"
+    last_error = ""
+
+    for attempt in range(1, max_attempts + 1):
+        if attempt > 1:
+            await asyncio.sleep(delay_seconds)
+
+        try:
+            response = await session_io.http.get(f"{path}{public_key}", params=params)
+            last_status = str(response.status)
+            try:
+                json_response = await response.json()
+            except Exception as exc:
+                last_error = repr(exc)
+                last_body = (await response.text())[:2000]
+            else:
+                last_body = json.dumps(json_response, sort_keys=True)[:2000]
+                promo = json_response.get("promo") if isinstance(json_response, dict) else None
+                if response.status == 200 and isinstance(promo, dict) and promo.get("ala"):
+                    return json_response
+        except Exception as exc:
+            last_error = repr(exc)
+
+        if attempt == 1 or attempt % 10 == 0:
+            print(
+                "Waiting for live Upfunnel promo response "
+                f"(attempt {attempt}/{max_attempts}, status={last_status}, error={last_error or 'none'})"
+            )
+
+    raise AssertionError(
+        "Promo data not found after max attempts. "
+        f"last_status={last_status}, last_error={last_error or 'none'}, last_body={last_body!r}"
+    )
+
+
 async def create_thor_merchant(backend_url: str) -> dict[str, str]:
-    from affirm.test_framework.api.endpoints.api.upfunnel.upfunnel_api import UpfunnelAPI
     from affirm.test_framework.api.utils.session import SessionIO
-    from base_test_util import async_wait_for_upfunnel_rom
-    from defs import EXTERNAL_ID_PARAM, EXTERNAL_ID_VALUE, PROMO_ALA_REQUEST_PARAMS
+    from defs import EXTERNAL_ID_PARAM, EXTERNAL_ID_VALUE, PROMO_ALA_REQUEST_PARAMS, PROMO_PATH
     from financing_program_util import FinancingProgramType
     from merchant_util import setup_merchant_and_pricing_bundles
     from template_util import CUSTOM_CTA, CUSTOM_INSTALLMENT_TAGLINE, create_external_id_templates
@@ -61,18 +104,21 @@ async def create_thor_merchant(backend_url: str) -> dict[str, str]:
             prequal_enabled=True,
         )
         await create_external_id_templates(session_io, merchant_ari, EXTERNAL_ID_VALUE)
+        session_io.set_axp_override("add_button_role_to_cta_ff", "feature_off")
 
         ala_request = PROMO_ALA_REQUEST_PARAMS.copy()
         ala_request[EXTERNAL_ID_PARAM] = EXTERNAL_ID_VALUE
-        upfunnel_response = await async_wait_for_upfunnel_rom(
-            UpfunnelAPI(session_io=session_io),
+        upfunnel_response = await wait_for_live_upfunnel_promo(
+            session_io,
             public_key,
             ala_request,
+            PROMO_PATH,
         )
-        if upfunnel_response.promo.ala != expected_ala:
+        actual_ala = upfunnel_response["promo"]["ala"]
+        if actual_ala != expected_ala:
             raise AssertionError(
                 "Unexpected live Upfunnel ALA response: "
-                f"expected {expected_ala!r}, got {upfunnel_response.promo.ala!r}"
+                f"expected {expected_ala!r}, got {actual_ala!r}"
             )
 
     return {
