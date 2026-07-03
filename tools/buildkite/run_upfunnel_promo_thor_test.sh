@@ -30,6 +30,25 @@ FIREBASE_PROJECT="${FIREBASE_PROJECT:-firebase-affirm}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
+if ! java -version 2>&1 | grep -q 'version "1\.8\.'; then
+  JDK8_DIR="${JDK8_DIR:-$ROOT_DIR/.buildkite-jdk8}"
+  if [[ ! -x "$JDK8_DIR/bin/java" ]]; then
+    mkdir -p "$JDK8_DIR"
+    jdk8_archive="$(mktemp)"
+    jdk8_url="${JDK8_URL:-https://api.adoptium.net/v3/binary/latest/8/ga/linux/x64/jdk/hotspot/normal/eclipse?project=jdk}"
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL "$jdk8_url" -o "$jdk8_archive"
+    else
+      wget -qO "$jdk8_archive" "$jdk8_url"
+    fi
+    tar -xzf "$jdk8_archive" -C "$JDK8_DIR" --strip-components=1
+    rm -f "$jdk8_archive"
+  fi
+  export JAVA_HOME="$JDK8_DIR"
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
+
+java -version
 ./gradlew :samples-java:assembleDebug :samples-java:assembleDebugAndroidTest
 
 if [[ "$ANDROID_TEST_RUNNER" == "connected" ]]; then

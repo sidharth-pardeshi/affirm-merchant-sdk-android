@@ -92,7 +92,9 @@ steps:
     depends_on: [ "create-thor-merchant" ]
     commands: |
       buildkite-agent artifact download upfunnel-promo-thor.env .
+      set -a
       . upfunnel-promo-thor.env
+      set +a
       tools/buildkite/run_upfunnel_promo_thor_test.sh
     artifact_paths:
       - upfunnel-promo-thor.env
