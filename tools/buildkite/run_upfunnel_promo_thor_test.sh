@@ -88,7 +88,18 @@ fi
 
 if [[ -n "${FIREBASE_SERVICE_ACCOUNT:-}" ]]; then
   firebase_credentials="$(mktemp)"
+  firebase_credentials_decoded="${firebase_credentials}.decoded"
   printf "%s" "$FIREBASE_SERVICE_ACCOUNT" > "$firebase_credentials"
+  if ! grep -q '"type"[[:space:]]*:[[:space:]]*"service_account"' "$firebase_credentials"; then
+    if printf "%s" "$FIREBASE_SERVICE_ACCOUNT" | base64 -d > "$firebase_credentials_decoded" 2>/dev/null \
+      && grep -q '"type"[[:space:]]*:[[:space:]]*"service_account"' "$firebase_credentials_decoded"; then
+      mv "$firebase_credentials_decoded" "$firebase_credentials"
+    else
+      rm -f "$firebase_credentials_decoded"
+      echo "FIREBASE_SERVICE_ACCOUNT must be a Google service-account JSON key, either raw JSON or base64-encoded JSON." >&2
+      exit 2
+    fi
+  fi
   gcloud auth activate-service-account --key-file="$firebase_credentials"
 fi
 
