@@ -98,6 +98,7 @@ steps:
       tools/buildkite/run_upfunnel_promo_thor_test.sh
     artifact_paths:
       - upfunnel-promo-thor.env
+      - firebase-test-lab.log
     env:
       AWS_ASSUME_ROLE_ARN: arn:aws:iam::448435121187:role/ec2-docker-client
       FIREBASE_PROJECT: firebase-affirm
@@ -122,8 +123,6 @@ steps:
             - "FIREBASE_PROJECT=firebase-affirm"
             - "FIREBASE_SERVICE_ACCOUNT"
           shell: [ "/bin/bash", "-e", "-c" ]
-      - ssh://git@github.com/affirm/firebase-test-lab-annotate-buildkite-plugin#v1.0.4:
-          artifacts: "*flank.log"
     retry:
       manual:
         permit_on_passed: true
@@ -132,15 +131,3 @@ steps:
           limit: 2
         - exit_status: 255
           limit: 2
-
-  - wait
-
-  - label: Check Android SDK Thor test results
-    key: checking-tests-results
-    depends_on: [ "android-sdk-upfunnel-promo-thor-test" ]
-    allow_dependency_failure: true
-    plugins:
-      - junit-annotate#v2.4.1:
-          artifacts: "*/*.junit"
-          ruby-image: "998571911837.dkr.ecr.us-east-1.amazonaws.com/dockerhub/library/ruby:2.5-alpine"
-          fail-build-on-error: true

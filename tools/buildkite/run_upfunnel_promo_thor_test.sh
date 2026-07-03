@@ -23,6 +23,7 @@ AFFIRM_COUNTRY_CODE="${AFFIRM_COUNTRY_CODE:-USA}"
 AFFIRM_LOCALE="${AFFIRM_LOCALE:-en_US}"
 ANDROID_TEST_RUNNER="${ANDROID_TEST_RUNNER:-firebase}"
 FIREBASE_PROJECT="${FIREBASE_PROJECT:-firebase-affirm}"
+FIREBASE_TEST_LOG="${FIREBASE_TEST_LOG:-firebase-test-lab.log}"
 
 : "${AFFIRM_PROMO_BASE_URL:?AFFIRM_PROMO_BASE_URL must be set, e.g. https://<thor-id>.affirm-thor.com}"
 : "${AFFIRM_PUBLIC_KEY:?AFFIRM_PUBLIC_KEY must be set to the Thor merchant public key}"
@@ -68,6 +69,23 @@ if [[ "$ANDROID_TEST_RUNNER" != "firebase" ]]; then
   exit 2
 fi
 
+if ! command -v gcloud >/dev/null 2>&1; then
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update
+    apt-get install -y ca-certificates curl gnupg
+    install -d -m 0755 /usr/share/keyrings
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+      | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+      > /etc/apt/sources.list.d/google-cloud-sdk.list
+    apt-get update
+    apt-get install -y google-cloud-cli
+  else
+    echo "gcloud is required for Firebase Test Lab, and this image does not support apt-get installation." >&2
+    exit 2
+  fi
+fi
+
 if [[ -n "${FIREBASE_SERVICE_ACCOUNT:-}" ]]; then
   firebase_credentials="$(mktemp)"
   printf "%s" "$FIREBASE_SERVICE_ACCOUNT" > "$firebase_credentials"
@@ -84,4 +102,5 @@ gcloud firebase test android run \
   --directories-to-pull /sdcard/Android/data/com.affirm.samples/files/upfunnel-promo-screenshots \
   --results-bucket "${FIREBASE_RESULTS_BUCKET:-firebase-affirm-android}" \
   --results-dir "upfunnel-promo-sdk-${BUILDKITE_BUILD_NUMBER:-local}-${BUILDKITE_JOB_ID:-manual}" \
-  --timeout 10m
+  --timeout 10m \
+  2>&1 | tee "$FIREBASE_TEST_LOG"
