@@ -22,7 +22,8 @@ def add_all_the_things_paths(all_the_things_dir: Path) -> None:
     e2e_dir = all_the_things_dir / "test_framework" / "tests" / "e2e"
     upfunnel_dir = e2e_dir / "thor" / "upfunnel_messaging"
     api_dir = all_the_things_dir / "test_framework" / "api"
-    for path in (str(upfunnel_dir), str(e2e_dir), str(api_dir)):
+    chameleon_toolkit_dir = all_the_things_dir / "chameleon" / "toolkit"
+    for path in (str(upfunnel_dir), str(e2e_dir), str(api_dir), str(chameleon_toolkit_dir)):
         if path not in sys.path:
             sys.path.insert(0, path)
 

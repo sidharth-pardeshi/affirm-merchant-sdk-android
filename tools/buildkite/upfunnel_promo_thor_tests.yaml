@@ -47,8 +47,21 @@ steps:
       "$$PYTHON_BIN" -c 'import sys; sys.exit("Upfunnel test framework requires Python 3.9+") if sys.version_info < (3, 9) else None'
       "$$PYTHON_BIN" -m venv .upfunnel-promo-thor-venv
       . .upfunnel-promo-thor-venv/bin/activate
-      python -m pip install --upgrade pip uv
-      uv pip install -e "$ALL_THE_THINGS_DIR/test_framework/tests/e2e"
+      python -m pip install --upgrade pip
+      python -m pip install \
+        aiohttp \
+        aiohttp-retry \
+        beautifulsoup4 \
+        nest-asyncio \
+        "pydantic>=2" \
+        pytest \
+        python-dateutil \
+        pyyaml \
+        requests \
+        tenacity \
+        typing-extensions \
+        urllib3 \
+        yarl
       python tools/buildkite/create_upfunnel_promo_thor_merchant.py --backend-url "$$BACKEND_URL"
       printf 'AFFIRM_PROMO_BASE_URL=%q\n' "$$BACKEND_URL" >> upfunnel-promo-thor.env
     agents:
